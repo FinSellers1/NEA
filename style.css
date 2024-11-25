@@ -1,0 +1,12 @@
+.button{
+    background-color: transparent;
+    border: none;
+    color:#f8e009 ;
+    font-size: 60px;  
+}
+
+.button:hover {
+    z-index 9;
+    transform: scale(1.04);
+    transition: transform ease 0.15s;
+}
