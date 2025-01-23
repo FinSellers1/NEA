@@ -422,7 +422,7 @@ function setup() {
     "....................................................................................................",
   ],
   16, 16, tileSize, tileSize)
-  tileMap2.layer = 4
+  tileMap2.layer = 5
 }
 
 function draw() {
@@ -627,26 +627,26 @@ function GuyAnimation(pMovement){
     goingRight = false
     guy.layer = 3
     sword.layer = 2
-    shield.layer = 2
+    shield.layer = 4
     sword.x = (guy.x - 8 )  // Locks sword onto guy's x position
     sword.y = (guy.y + 1)  // Locks sword onto guy's y position
     rotationSensor.x = (guy.x - 8 )  // Locks rotationSensor onto guy's x position
     rotationSensor.y = (guy.y + 1)  // Locks rotationSensor onto guy's y position
-    shield.x = (guy.x + 6)
+    shield.x = (guy.x - 5)
     shield.y = (guy.y + 2)
   }
   if (movement == 2 && idleHorizontal == false){
     guy.ani = 'moveRight'
     goingLeft = false
     goingRight = true
-    guy.layer = 2
-    sword.layer = 3
-    shield.layer = 3
+    guy.layer = 3
+    sword.layer = 4
+    shield.layer = 2
     sword.x = (guy.x + 5 )  // Locks sword onto guy's x position
     sword.y = (guy.y + 1)  // Locks sword onto guy's y position
     rotationSensor.x = (guy.x + 5 )  // Locks rotationSensor onto guy's x position
     rotationSensor.y = (guy.y + 1)  // Locks rotationSensor onto guy's y position
-    shield.x = (guy.x - 6 )
+    shield.x = (guy.x + 6 )
     shield.y = (guy.y + 2)
   }
   if (movement == 3 && idleVertical == false){
