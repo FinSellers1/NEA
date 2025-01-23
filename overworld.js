@@ -3,6 +3,7 @@ let movementActive = true
 let walls, wall, floors, tileMap, grass, boundary, doors, trapDoorTL, trapDoorTR, trapDoorBL, trapDoorBR
 let wallImg, grassImg, boundaryImg, trapDoorOpenTLImg, trapDoorOpenTRImg,trapDoorOpenBLImg, shieldImg, trapDoorOpenBRImg, trapDoorClosedTLImg, trapDoorClosedTRImg, trapDoorClosedBLImg, trapDoorClosedBRImg
 let countdownTime = 0.15; // Countdown time in seconds
+let countdownTime2 = 3
 let startTime;
 let isCountingDown = false;
 let swing = false
@@ -13,6 +14,12 @@ let idleVertical = true
 let swordBoundary = 111
 let sLeft = false
 let sRight = false
+let lives = 5
+let barInsideXPOS = 0 
+let doSpinMove = false
+let barFull = false
+let swordStop = false
+let bossFightArea = false
 
 function preload() {
 
@@ -35,9 +42,15 @@ function preload() {
   swordImg = loadImage('sword2.png')
   spriteImg = loadImage('spriteSheet.png')
   shieldImg = loadImage('sheild.png')
-  //shieldImg2 = loadImage('sheild.png')
+  heartsImg = loadImage('heartsSpritesheet3.png')
   //shieldImg3 = loadImage('sheild.png')
 
+}
+
+
+function testEnemySetup(){
+  enemy = new Sprite(100,200,40,40,'d')
+  enemy.layer = 2
 }
 
 
@@ -55,6 +68,33 @@ function guySetup(){
     idle:{row:0, frames:1}
   })
   guy.scale = 0.7
+}
+
+function lifeHeartsSetup(){
+  hearts = new Sprite(100,100,547,(532/5),'n')
+  hearts.rotationLock = true
+  hearts.layer = 6
+  hearts.spriteSheet = heartsImg
+  hearts.addAnis({
+    5: {row:0, frames:1},
+    4: {row:1, frames:1},
+    3: {row:2, frames:1},
+    2: {row:3, frames:1},
+    1: {row:4, frames:1},
+  })
+  hearts.scale = 0.2
+}
+
+function spinMoveSetup(){
+  barOutline = new Sprite(guy.x - 50,guy.y - 165,100,20,'n')
+  barInside = new Sprite(guy.x - 97,guy.y - 165,2,14,'n')
+  barOutline.visible = false
+  barInside.visible = false
+  barOutline.color = 'black'
+  barInside.color = 'red'
+  barOutline.layer = 6
+  barInside.layer = 7
+
 }
 
 function swordSetup(){
@@ -186,6 +226,7 @@ function Camera_Setup() {
     if(camera.zoom < 1.3){
       camera.zoom +=0.01
     }
+    bossFightArea = true
   }
   else{
     if (guy.y > 1080 && camera.y != guy.y){
@@ -196,6 +237,7 @@ function Camera_Setup() {
     }
     camera.x = guy.x
     camera.y = guy.y 
+    bossFightArea = false
   }
 }
 
@@ -307,8 +349,11 @@ function setup() {
   ],16, 16, tileSize, tileSize)
 
   guySetup()
+  spinMoveSetup()
   swordSetup()
   shieldSetup()
+  lifeHeartsSetup()
+  testEnemySetup()
   tileMap1.layer = 1
 
   sword.overlaps(guy)
@@ -426,13 +471,45 @@ function setup() {
 }
 
 function draw() {
+  console.log(hearts.x)
+  console.log(hearts.y)
   clear()
   Camera_Setup()
   swordDraw()
   Movement()
+  spinMove()
+  if (bossFightArea){
+    heartsDraw(1)
+  }
+  else{
+    heartsDraw(0)
+  }
   if (guy.overlaps(trapDoorBL) || guy.overlaps(trapDoorBR) || guy.overlaps(trapDoorTL) || guy.overlaps(trapDoorTR)){
     enterDungeon()
   }
+}
+
+function heartsDraw(a){
+  if(a==0){
+    hearts.x = guy.x - 165
+    hearts.y = guy.y - 165
+    if (hearts.scale < 0.2) hearts.scale += 0.05
+  }
+  if(a==1){
+    if (hearts.x < 962 && hearts.x > 958) hearts.x = 960
+    else if (hearts.x > 958) hearts.x -= 2
+    else if (hearts.x < 962) hearts.x += 2
+    if (hearts.y < 852 && hearts.y > 848) hearts.y = 850
+    else if (hearts.y > 848) hearts.y -= 2
+    else if (hearts.y < 852) hearts.y += 2
+    if (hearts.scale > 0.18) hearts.scale -= 0.01
+  }
+  if(guy.overlaps(enemy)) lives -=1
+  if(lives == 5) hearts.ani = '5'
+  if(lives == 4) hearts.ani = '4'
+  if(lives == 3) hearts.ani = '3'
+  if(lives == 2) hearts.ani = '2'
+  if(lives == 1) hearts.ani = '1'
 }
 
 function swordDraw(){
@@ -443,16 +520,18 @@ function swordDraw(){
 }
 
 function swordRotation(){
-  if((rotationSensor.rotation >= swordBoundary || rotationSensor.rotation <= -swordBoundary) && swing == false){
-    if(rotationSensor.rotation >= swordBoundary){
-      sword.rotation = swordBoundary
+  if (!swordStop){
+    if((rotationSensor.rotation >= swordBoundary || rotationSensor.rotation <= -swordBoundary) && swing == false){
+      if(rotationSensor.rotation >= swordBoundary){
+        sword.rotation = swordBoundary
+      }
+      else if(rotationSensor.rotation <= -swordBoundary){
+        sword.rotation = -swordBoundary
+      }
     }
-    else if(rotationSensor.rotation <= -swordBoundary){
-      sword.rotation = -swordBoundary
+    else if (rotationSensor.rotation < swordBoundary || rotationSensor.rotation > -swordBoundary){
+        if (swing == false) sword.rotation = rotationSensor.rotation
     }
-  }
-  else if (rotationSensor.rotation < swordBoundary || rotationSensor.rotation > -swordBoundary){
-      if (swing == false) sword.rotation = rotationSensor.rotation
   }
 }
 
@@ -567,7 +646,105 @@ function swordSwing(){
       swing = false
       timerOver = true
     }
-    //console.log(remainingTime)
+  } 
+}
+
+function spinMove(){
+  if(mouse.pressing() >= 25){
+    barOutline.visible = true
+    barInside.visible = true
+    if (barInside.w <= 94){
+      barInside.w += (1 * 0.75)
+      barInsideXPOS += (0.5 * 0.75)
+      if ((barInside.w >= 94) && (barInside.w <= 94.5)) {
+        barFull = true
+      }
+      else{
+        barFull = false
+      }
+    }
+  }
+  else{
+    doSpinMove = false
+    barOutline.visible = false
+    barInside.visible = false
+    barInside.w = 2
+    barInsideXPOS = 0
+  }
+  barOutline.x = guy.x - 50
+  barOutline.y = guy.y - 165
+  barInside.x = (guy.x - 96) + barInsideXPOS
+  barInside.y = guy.y - 165
+
+  if ((barFull == true) && (mouse.released())) {
+    doSpinMove = true
+  }
+  else{
+    doSpinMove = false
+  }
+
+  if(doSpinMove == true){
+    startTime = millis();
+    isCountingDown = true;
+    swordStop = true
+    movementActive = false
+
+    if (isCountingDown) {
+      let elapsedTime = millis() - startTime;
+      let remainingTime = countdownTime2 * 1000 - elapsedTime; // Convert to milliseconds
+      console.log(remainingTime)
+      if (remainingTime >= 2500 && remainingTime <= 3000) {
+        sword.rotation = 90
+        sword.layer = 4
+        guy.layer = 3
+        shield.layer = 2
+        sword.x = (guy.x + 7)  // Locks sword onto guy's x position
+        sword.y = (guy.y + 1)  // Locks sword onto guy's y position
+        shield.x = (guy.x)
+        shield.y = (guy.y - 1)
+        timerOver = false
+      }
+      else if(remainingTime >= 2000 && remainingTime <= 2500){
+        sword.rotation = -90
+        sword.layer = 2
+        guy.layer = 3
+        shield.layer = 4
+        sword.x = (guy.x - 7)  // Locks sword onto guy's x position
+        sword.y = (guy.y + 1)  // Locks sword onto guy's y position
+        shield.x = (guy.x)
+        shield.y = (guy.y - 1)
+        timerOver = false
+      }
+      else if (remainingTime >= 1500 && remainingTime <= 2000) {
+        sword.rotation = 90
+        sword.layer = 4
+        guy.layer = 3
+        shield.layer = 2
+        sword.x = (guy.x + 7)  // Locks sword onto guy's x position
+        sword.y = (guy.y + 1)  // Locks sword onto guy's y position
+        shield.x = (guy.x)
+        shield.y = (guy.y - 1)
+        timerOver = false
+      }
+      else if(remainingTime >= 1000 && remainingTime <= 1500){
+        sword.rotation = -90
+        sword.layer = 2
+        guy.layer = 3
+        shield.layer = 4
+        sword.x = (guy.x - 7)  // Locks sword onto guy's x position
+        sword.y = (guy.y + 1)  // Locks sword onto guy's y position
+        shield.x = (guy.x)
+        shield.y = (guy.y - 1)
+        timerOver = false
+      }
+      if (remainingTime <= 0) {
+        remainingTime = 0;
+        isCountingDown = false; // Stop the countdown when it reaches zero
+        timerOver = true
+        swordStop = false
+        movementActive = true
+      }
+    }
   } 
 }
 
@@ -575,44 +752,31 @@ function Movement() {
   if (movementActive == true){
     if (kb.pressing('a')) {
       guy.vel.x = -3
-      //sword.vel.x = -3
-      //rotationSensor.vel.x = -3
       idleHorizontal = false
       GuyAnimation(1)
     }
     else if (kb.pressing('d')) {
       guy.vel.x = 3
-      //sword.vel.x = 3
-      //rotationSensor.vel.x = 3
       idleHorizontal = false
       GuyAnimation(2)
     }
-
     else {
       guy.vel.x = 0
-      //sword.vel.x = 0
-      //rotationSensor.vel.x = 0
       idleHorizontal = true
       GuyAnimation(5)
     }
     if (kb.pressing('s')) {
       guy.vel.y = 3
-      //sword.vel.y = 3
-      //rotationSensor.vel.y = 3
       idleVertical = false
       GuyAnimation(3)
     }
     else if (kb.pressing('w')) {
       guy.vel.y = -3
-      //sword.vel.y = -3
-      //rotationSensor.vel.y = -3
       idleVertical = false
       GuyAnimation(4)
     }
     else {
       guy.vel.y = 0
-      //sword.vel.y = 0
-      //rotationSensor.vel.y = 0
       idleVertical = true
       GuyAnimation(5)
     }
@@ -654,8 +818,8 @@ function GuyAnimation(pMovement){
     goingLeft = false
     goingRight = false
     guy.layer = 2
-    sword.layer = 3
-    shield.layer = 2
+    sword.layer = 4
+    shield.layer = 3
     sword.x = (guy.x - 8 )  // Locks sword onto guy's x position
     sword.y = (guy.y + 1)  // Locks sword onto guy's y position
     rotationSensor.x = (guy.x - 8 )  // Locks rotationSensor onto guy's x position
@@ -667,9 +831,9 @@ function GuyAnimation(pMovement){
     guy.ani = 'moveUp'
     goingLeft = false
     goingRight = false
-    guy.layer = 3
+    guy.layer = 4
     sword.layer = 2
-    shield.layer = 2
+    shield.layer = 3
     sword.x = (guy.x + 5 )  // Locks sword onto guy's x position
     sword.y = (guy.y + 1)  // Locks sword onto guy's y position
     rotationSensor.x = (guy.x + 5 )  // Locks rotationSensor onto guy's x position
