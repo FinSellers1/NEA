@@ -193,7 +193,7 @@ function dungeonCameraSetup() {
 
 function setup() {
   createCanvas(480, 384, 'pixelated');
-  // createCanvas(480, 384);
+  //createCanvas(480, 384);
   dungeonCameraSetup()
   Map_Setup()
 
